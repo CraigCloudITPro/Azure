@@ -3,7 +3,7 @@
 ![](https://user-images.githubusercontent.com/8083855/47106128-dbb6a280-d256-11e8-9fda-d37b8e5580c7.png) 
 
 
-This repository contains a selection of PowerShell scripts for developers and administrators to audit specific resources in Microsoft Azure.
+This repository contains a selection of PowerShell scripts for developers and administrators to audit specific resources in Microsoft Azure, it then outputs that information to a .csv 
 
 ## Pre Reqs
 
