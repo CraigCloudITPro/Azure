@@ -3,9 +3,8 @@
 .SYNOPSIS
 
     This script will deploy an on Demand single Virtual Machine & Network Security Group to be used as a JumpBox.
-    It will pass your Public IP Address as an Allowed rule into the NSG.
-    For Security and Auditing purposes credentials are randomly generated so the purpose is to use this VM for 1 time only,
-    All logs from the beginning of deployment will be uploaded to Azure Blob Storage.
+    It will pass your Public IP Address as an Allowed rule into the NSG on 3389.
+    For Security purposes credentials are randomly generated so the purpose is to use this VM for 1 time only.
     Once you've completed your tasks within the JumpBox go back to the PowerShell console and enter "yes" twice, 
     this will remove what you've just deployed from the portal.
 
