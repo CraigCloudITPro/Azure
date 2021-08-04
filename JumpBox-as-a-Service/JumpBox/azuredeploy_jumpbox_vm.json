@@ -1,0 +1,165 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "LocalAdminUsername": {
+      "type": "String",
+      "metadata": {
+        "description": "Specifies the username for the local administrator account."
+      }
+    },
+    "LocalAdminPassword": {
+      "minLength": 6,
+      "maxLength": 123,
+      "type": "SecureString",
+      "metadata": {
+        "description": "Specifies the password for the local administrator account. Password must be between 12-123 characters and have no less than 3 of the following: 1 lower case character, 1 upper case character, 1 number, and 1 special character that is not '\\' or '-'."
+      }
+    },
+    "NetworkResourceGroup": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the Resource Group of the vNet which the VM(s) will be attached to."
+      }
+    },
+    "NetworkName": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the name of the vNet which the VM(s) will be attached to."
+      },
+      "minLength": 1
+    },
+    "SubnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the name of the Subnet which the Virtual Network sits in."
+      },
+      "minLength": 1
+    },
+    "VMName": {
+      "type": "string",
+      "metadata": {
+        "description": "Specify Virtual Machine Name"
+      },
+      "minLength": 1
+    },
+    "VMSize": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the size of the virtual machine(s)."
+      }
+    }
+  },
+  "variables": {
+    "VNetID": "[resourceId(Parameters('networkResourceGroup'), 'Microsoft.Network/virtualNetworks', Parameters('networkname'))]",
+    "VMSubnetRef": "[concat(variables('VNetID'), '/subnets/', Parameters('subnetName'))]",
+    "publicIPRef": "[resourceId('Microsoft.Network/publicIPAddresses/', variables('PublicIPsuffix'))]",
+    "PublicIPsuffix": "[concat(parameters('VMName'), '-', 'publicip01')]",
+    "NICsuffix": "[concat(parameters('VMName'), '-', 'nic01')]",
+    "vmossuffix": "OSDisk01"
+  },
+  "resources": [
+    {
+      "apiVersion": "2019-02-01",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('PublicIPsuffix')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Basic"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic"
+      }
+    },
+    {
+      "name": "[variables('NICsuffix')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('PublicIPsuffix'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses/', variables('PublicIPsuffix'))]"
+              },
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('VMSubnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[parameters('VMName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2018-06-01",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('NICsuffix'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmsize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('VMName')]",
+          "adminUsername": "[parameters('localAdminUsername')]",
+          "adminPassword": "[parameters('localAdminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2016-Datacenter",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[concat(parameters('VMName'), '-', variables('vmossuffix'))]",
+            "managedDisk": {
+              "storageAccountType": "Standard_LRS"
+            },
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('NICsuffix'))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "apiVersion": "[providers('Microsoft.DevTestLab','labs').apiVersions[0]]",
+      "type": "microsoft.devtestlab/schedules",
+      "name": "[concat('shutdown-computevm-',parameters('vmName'))]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/',concat(parameters('vmName')))]"
+      ],
+      "properties": {
+        "status": "Enabled",
+        "taskType": "ComputeVmShutdownTask",
+        "dailyRecurrence": {
+          "time": "19:00"
+        },
+        "timeZoneId": "W. Europe Standard Time",
+        "notificationSettings": {
+          "status": "Disabled",
+          "timeInMinutes": 15
+        },
+        "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines',concat(parameters('vmName')))]"
+      }
+    }
+  ],
+  "outputs": {
+  }
+}

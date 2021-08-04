@@ -1,0 +1,60 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+  "contentVersion": "1.0.0.1",
+  "parameters": {
+    "Location": {
+      "type": "String",
+      "metadata": {
+        "description": "The Regional Location of the resources you want to be deploying into"
+      }
+    },
+    "VMName": {
+      "type": "string",
+      "metadata": {
+        "description": "Existing VMName"
+      }
+    },
+    "YourPublicIP": {
+      "type": "string",
+      "metadata": {
+        "description": "The Public IP address of your source wanting to connect too"
+      }
+    }
+  },
+  "variables": {
+
+    "nsg_name": "[concat(parameters('VMName'), '-', 'nsg01')]"
+
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('nsg_Name')]",
+      "location": "[parameters('Location')]",
+      "apiVersion": "2018-03-01",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "AllowRDP3389JumpBox",
+            "properties": {
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3389",
+              "sourceAddressPrefix": "[parameters('YourPublicIP')]",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 500,
+              "direction": "Inbound",
+              "sourcePortRanges": [],
+              "destinationPortRanges": [],
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          }
+        ]
+
+      }
+    }
+  ],
+  "outputs": {}
+}
